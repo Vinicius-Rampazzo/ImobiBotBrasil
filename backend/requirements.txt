@@ -1,0 +1,5 @@
+requests
+python-dotenv
+mysql-connector-python
+
+# Ainda vou deicidir se vou utilizar o sqlite3 ou MySQL.
