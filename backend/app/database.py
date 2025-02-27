@@ -24,11 +24,34 @@ def criar_tabela():
     )
   ''')
 
+  cursor.execute('''
+    CREATE TABLE IF NOT EXISTS clientes (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        nome TEXT NOT NULL,
+        tipo TEXT CHECK(tipo IN ('corretor', 'cliente proprietario', 'locatario', 'interessado', 'outros')) NOT NULL,
+        contato TEXT NOT NULL,
+        email TEXT NOT NULL UNIQUE
+    )
+    ''')
+
+  cursor.execute('''
+    CREATE TABLE IF NOT EXISTS leads (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        cliente_id INTEGER NOT NULL,
+        imovel_id INTEGER NOT NULL,
+        interacoes INTEGER DEFAULT 0,
+        status TEXT CHECK(status IN ('fria', 'morna', 'quente')) DEFAULT 'fria',
+        ultima_interacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (cliente_id) REFERENCES clientes(id),
+        FOREIGN KEY (imovel_id) REFERENCES imoveis(id)
+    )
+    ''')
+
   conexao.commit()
   conexao.close()
   print('banco de dados e tabela de imóveis criados com sucesso!')
 
-# funcao para criar minhas tabelas. Nessa funcao eu chamei a funcao 'conectar_banco()' para abrir uma conexao com o banco e criei um cursor para conseguir executar comandos SQLs dentro do banco. Chamando a variavel 'cursor' eu consigo chamar a funcao 'executar' onde me permite criar tabelas com comandos SQL.
+# funcao para criar minhas tabelas "imoveis" e "clientes". Nessa funcao eu chamei a funcao 'conectar_banco()' para abrir uma conexao com o banco e criei um cursor para conseguir executar comandos SQLs dentro do banco. Chamando a variavel 'cursor' eu consigo chamar a funcao 'executar' onde me permite criar tabelas com comandos SQL.
 
 if __name__ == '__main__':
   criar_tabela()
