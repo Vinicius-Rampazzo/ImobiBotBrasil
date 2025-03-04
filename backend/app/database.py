@@ -19,6 +19,7 @@ def criar_tabela():
         endereco TEXT NOT NULL,
         tipo TEXT CHECK(tipo IN ('casa', 'apartamento', 'terreno')),
         finalidade TEXT CHECK(finalidade IN ('venda', 'locacao')) NOT NULL DEFAULT 'venda',
+        imagem TEXT,
         quartos INTEGER,
         banheiros INTEGER,
         metragem REAL,
