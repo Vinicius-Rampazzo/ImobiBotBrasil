@@ -12,11 +12,13 @@ def criar_tabela():
   cursor.execute('''
   CREATE TABLE IF NOT EXISTS imoveis (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
+        codigo_referencia TEXT UNIQUE NOT NULL,
         titulo TEXT NOT NULL,
         descricao TEXT,
         preco REAL NOT NULL,
         endereco TEXT NOT NULL,
         tipo TEXT CHECK(tipo IN ('casa', 'apartamento', 'terreno')),
+        finalidade TEXT CHECK(finalidade IN ('venda', 'locacao')) NOT NULL DEFAULT 'venda',
         quartos INTEGER,
         banheiros INTEGER,
         metragem REAL,
