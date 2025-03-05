@@ -1,51 +1,23 @@
-import http.server
-import socketserver
-import json
-from urllib.parse import urlparse
+from flask import Flask, jsonify, request
+from imoveis import imoveis_bp
+from upload import upload_bp
 
-# A biblioteca urllib.parse eu uso para analisar URLs e extrair parâmetros.
-# A biblioteca socketserver permite que o servidor aceite múltiplas conexões simultaneamente.
+app = Flask(__name__)
 
-PORT = 8080
+app.register_blueprint(imoveis_bp)
+app.register_blueprint(upload_bp)
 
-class MyHandler(http.server.SimpleHTTPRequestHandler):
-    def do_GET(self):
-        parsed_path = urlparse(self.path)
-        if parsed_path.path == '/api/status':
-            self.send_response(200)
-            self.send_header('Content-type', 'application/json')
-            self.end_headers()
-            self.wfile.write(json.dumps({'status': 'Servidor rodando!'}).encode())
-        else:
-            self.send_response(404)
-            self.end_headers()
-            self.wfile.write(b'Rota nao encontrada.')
+@app.route("/api/status", methods=["GET"])
+def status():
+    return jsonify({"status": "Servidor rodando!"})
 
-    # Essa funcao é responsavel por lidar com requisições do tipo GET, quando o usuário solicita informações do servidor e testa servidor. Inclusive, o nome 'do_GET' é um nome que o python já espera, pois a classe MyHandler tem métodos específicos para lidar com requisicoes http
+@app.route("/api/chatbot", methods=["POST"])
+def chatbot():
+    dados = request.json
+    mensagem = dados.get("mensagem", "")
 
-    def do_POST(self):
-        parsed_path = urlparse(self.path)
-        if parsed_path.path == '/api/chatbot':
-            content_length = int(self.headers['Content-Length'])
-            post_data = self.rfile.read(content_length)
-            data = json.loads(post_data)
+    resposta = {"mensagem": f"Recebi sua mensagem: {mensagem}"}
+    return jsonify(resposta)
 
-            resposta = {'mensagem': f'Recebi sua mensagem: {data.get('mensagem')}'}
-
-            self.send_response(200)
-            self.send_header('Content-type', 'application/json')
-            self.end_headers()
-            self.wfile.write(json.dumps(resposta).encode())
-        else:
-            self.send_response(404)
-            self.end_headers()
-            self.wfile.write(b'Rota nao encontrada.')
-
-    # Essa funcao é responsável por lidar com requisições do tipo POST, quando o usuário envia dados para o backend.
-
-
-with socketserver.TCPServer(('', PORT), MyHandler) as httpd:
-    print(f'🚀 Servidor rodando na porta {PORT}')
-    httpd.serve_forever()
-
-    # Com o socketserver eu inicio o servidor HTTP
+if __name__ == "__main__":
+    app.run(debug=True, port=8080)

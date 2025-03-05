@@ -1,17 +1,18 @@
 import os
 import sqlite3
-from flask import Flask, request, jsonify
+from flask import Blueprint, request, jsonify
 
-app = Flask(__name__)
+upload_bp = Blueprint("upload", __name__)
+# criando um Blueprint
 
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 UPLOAD_FOLDER = os.path.join(BASE_DIR, "uploads/imoveis/")
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
-
-app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
 
 # diretório onde as imagens serão salvas
+
+# app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 
 
 def arquivo_permitido(filename):
@@ -26,7 +27,7 @@ def conectar_banco():
 # funcao para a conexao com o banco de dados
 
 
-@app.route("/upload", methods=["POST"])
+@upload_bp.route("/api/upload", methods=["POST"])
 def upload_imagem():
     if "imagem" not in request.files:
         return jsonify({"erro": "Nenhuma imagem enviada!"}), 400
@@ -39,10 +40,10 @@ def upload_imagem():
         return jsonify({"erro": "Código de referência do imóvel é obrigatório!"}), 400
 
     if imagem.filename == "" or not arquivo_permitido(imagem.filename):
-        return jsonify({"erro": "Arquivo inválido! Apenas PNG, JPG, JPEG e GIF são permitidos."}), 400
+        return jsonify({"erro": "Arquivo inválido! Apenas PNG, JPG, e JPEG são permitidos."}), 400
 
     
-    caminho_arquivo = os.path.join(app.config["UPLOAD_FOLDER"], f"{codigo_referencia}_{imagem.filename}")
+    caminho_arquivo = os.path.join(UPLOAD_FOLDER, f"{codigo_referencia}_{imagem.filename}")
     imagem.save(caminho_arquivo)
     #  Garante que o nome do arquivo será único e salvo a imagem na pasta correta
 
@@ -59,6 +60,3 @@ def upload_imagem():
         conexao.rollback()
         conexao.close()
         return jsonify({"erro": str(e)}), 500
-
-if __name__ == "__main__":
-    app.run(debug=True, port=5001)
