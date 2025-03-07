@@ -3,6 +3,7 @@ import sqlite3
 from flask import Blueprint, request, jsonify
 
 upload_bp = Blueprint("upload", __name__)
+
 # criando um Blueprint
 
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -11,8 +12,6 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
 
 # diretório onde as imagens serão salvas
-
-# app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 
 
 def arquivo_permitido(filename):

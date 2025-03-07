@@ -33,10 +33,11 @@ def buscar_imoveis():
     cursor = conexao.cursor()
 
     tipo = request.args.get("tipo")
-    max_preco = request.args.get("max_preco")
+    max_preco = request.args.get("max_preco", type=float)
     finalidade = request.args.get("finalidade")
+    min_quartos = request.args.get("min_quartos", type=int)
 
-    query = "SELECT codigo_referencia, titulo, preco, finalidade, imagem FROM imoveis WHERE 1=1"
+    query = "SELECT codigo_referencia, titulo, preco, finalidade, imagem, quartos, banheiros, status FROM imoveis WHERE 1=1"
     parametros = []
 
     if tipo:
@@ -50,14 +51,29 @@ def buscar_imoveis():
     if finalidade:
         query += " AND finalidade = ?"
         parametros.append(finalidade)
+    
+    if min_quartos:
+        query += " AND quartos >= ?"
+        parametros.append(min_quartos)
 
     cursor.execute(query, parametros)
     imoveis = cursor.fetchall()
     conexao.close()
 
-    imoveis_json = [
-        {"codigo": row[0], "titulo": row[1], "preco": row[2], "finalidade": row[3], "imagem": row[4]}
-        for row in imoveis
-    ]
+    imoveis_json = []
+
+    print(imoveis)
+
+    for imovel in imoveis:
+        imoveis_json.append({
+            "codigo_referencia": imovel[0],
+            "titulo": imovel[1],
+            "preco": imovel[2],
+            "finalidade": imovel[3],
+            "imagem": imovel[4],
+            "quartos": imovel[5],
+            "banheiros": imovel[6],
+            "status": imovel[7]
+        })
 
     return jsonify(imoveis_json)
