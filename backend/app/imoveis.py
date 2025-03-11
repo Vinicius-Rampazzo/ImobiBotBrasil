@@ -2,13 +2,14 @@ from flask import Blueprint, jsonify, request
 import sqlite3
 
 imoveis_bp = Blueprint("imoveis", __name__)
-# um Blueprint para as rotas de imóveis
 
 def conectar_banco():
+    """Estabelece a conexão com o banco de dados."""
     return sqlite3.connect("imobibot.db")
 
 @imoveis_bp.route("/api/imoveis", methods=["GET"])
 def listar_imoveis():
+    """Retorna todos os imóveis cadastrados no banco."""
     conexao = conectar_banco()
     cursor = conexao.cursor()
 
@@ -18,7 +19,7 @@ def listar_imoveis():
 
     imoveis_json = [
         {
-            "codigo": row[0], "titulo": row[1], "descricao": row[2], "preco": row[3], "endereco": row[4],
+            "codigo_referencia": row[0], "titulo": row[1], "descricao": row[2], "preco": row[3], "endereco": row[4],
             "tipo": row[5], "finalidade": row[6], "imagem": row[7], "quartos": row[8], "banheiros": row[9],
             "metragem": row[10], "status": row[11]
         }
@@ -28,14 +29,25 @@ def listar_imoveis():
     return jsonify(imoveis_json)
 
 @imoveis_bp.route("/api/imoveis/buscar", methods=["GET"])
-def buscar_imoveis():
+def buscar_imoveis_route():
+    """Rota GET para buscar imóveis filtrados via requisição HTTP."""
+    filtros = {
+        "tipo": request.args.get("tipo"),
+        "max_preco": request.args.get("max_preco", type=float),
+        "finalidade": request.args.get("finalidade"),
+        "min_quartos": request.args.get("min_quartos", type=int)
+    }
+
+    # Remove filtros que não foram passados para evitar conflitos
+    filtros = {k: v for k, v in filtros.items() if v is not None}
+
+    imoveis = buscar_imoveis(**filtros)
+    return jsonify(imoveis)
+
+def buscar_imoveis(tipo=None, max_preco=None, finalidade=None, min_quartos=None):
+    """Função que busca imóveis filtrados. Pode ser usada pela API e pelo chatbot."""
     conexao = conectar_banco()
     cursor = conexao.cursor()
-
-    tipo = request.args.get("tipo")
-    max_preco = request.args.get("max_preco", type=float)
-    finalidade = request.args.get("finalidade")
-    min_quartos = request.args.get("min_quartos", type=int)
 
     query = "SELECT codigo_referencia, titulo, preco, finalidade, imagem, quartos, banheiros, status FROM imoveis WHERE 1=1"
     parametros = []
@@ -51,21 +63,17 @@ def buscar_imoveis():
     if finalidade:
         query += " AND finalidade = ?"
         parametros.append(finalidade)
-    
+
     if min_quartos:
         query += " AND quartos >= ?"
-        parametros.append(min_quartos)
+        parametros.append(int(min_quartos))
 
     cursor.execute(query, parametros)
     imoveis = cursor.fetchall()
     conexao.close()
 
-    imoveis_json = []
-
-    print(imoveis)
-
-    for imovel in imoveis:
-        imoveis_json.append({
+    return [
+        {
             "codigo_referencia": imovel[0],
             "titulo": imovel[1],
             "preco": imovel[2],
@@ -74,6 +82,6 @@ def buscar_imoveis():
             "quartos": imovel[5],
             "banheiros": imovel[6],
             "status": imovel[7]
-        })
-
-    return jsonify(imoveis_json)
+        }
+        for imovel in imoveis
+    ]
