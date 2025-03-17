@@ -44,8 +44,7 @@ def buscar_imoveis_route():
     imoveis = buscar_imoveis(**filtros)
     return jsonify(imoveis)
 
-def buscar_imoveis(tipo=None, max_preco=None, finalidade=None, min_quartos=None):
-    """Função que busca imóveis filtrados. Pode ser usada pela API e pelo chatbot."""
+def buscar_imoveis(tipo=None, finalidade=None, min_preco=None, max_preco=None, min_quartos=None):
     conexao = conectar_banco()
     cursor = conexao.cursor()
 
@@ -56,24 +55,29 @@ def buscar_imoveis(tipo=None, max_preco=None, finalidade=None, min_quartos=None)
         query += " AND tipo = ?"
         parametros.append(tipo)
 
-    if max_preco:
-        query += " AND preco <= ?"
-        parametros.append(float(max_preco))
-
     if finalidade:
         query += " AND finalidade = ?"
         parametros.append(finalidade)
 
-    if min_quartos:
+    if min_preco is not None:
+        query += " AND preco >= ?"
+        parametros.append(min_preco)
+
+    if max_preco is not None:
+        query += " AND preco <= ?"
+        parametros.append(max_preco)
+
+    if min_quartos is not None:
         query += " AND quartos >= ?"
-        parametros.append(int(min_quartos))
+        parametros.append(min_quartos)
 
     cursor.execute(query, parametros)
     imoveis = cursor.fetchall()
     conexao.close()
 
-    return [
-        {
+    imoveis_json = []
+    for imovel in imoveis:
+        imoveis_json.append({
             "codigo_referencia": imovel[0],
             "titulo": imovel[1],
             "preco": imovel[2],
@@ -82,6 +86,6 @@ def buscar_imoveis(tipo=None, max_preco=None, finalidade=None, min_quartos=None)
             "quartos": imovel[5],
             "banheiros": imovel[6],
             "status": imovel[7]
-        }
-        for imovel in imoveis
-    ]
+        })
+
+    return imoveis_json

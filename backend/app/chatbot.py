@@ -1,5 +1,6 @@
 import openai
 import os
+import re
 from flask import Blueprint, request, jsonify
 from imoveis import buscar_imoveis
 from dotenv import load_dotenv
@@ -27,10 +28,24 @@ def enviar_para_groq(mensagem):
 def extrair_filtros(mensagem):
     filtros = {}
     encontrou_filtro = False
-
     mensagem_lower = mensagem.lower()
 
-    # Identifica se o usuário quer casa ou apartamento
+    if any(frase in mensagem_lower for frase in [
+        "imóveis disponíveis", "imoveis disponiveis", 
+        "imóveis de aluguel", "imoveis de aluguel",
+        "imóveis para alugar", "imoveis para alugar",
+        "imóveis à venda", "imoveis a venda",
+        "todos os imóveis", "todos os imoveis",
+    ]):
+        # Retornar um filtro vazio (que vai buscar todos os imóveis)
+
+        encontrou_filtro = True
+
+        if "aluguel" in mensagem_lower or "alugar" in mensagem_lower:
+            filtros["finalidade"] = "locacao"
+        elif "venda" in mensagem_lower or "comprar" in mensagem_lower:
+            filtros["finalidade"] = "venda"
+
     if "casa" in mensagem_lower:
         filtros["tipo"] = "casa"
         encontrou_filtro = True
@@ -38,34 +53,43 @@ def extrair_filtros(mensagem):
         filtros["tipo"] = "apartamento"
         encontrou_filtro = True
 
-    # Identifica se a finalidade é aluguel ou venda
-    if "alugar" in mensagem_lower or "locação" in mensagem_lower or "locacao" in mensagem_lower:
+    if any(palavra in mensagem_lower for palavra in ["alugar", "locação", "locacao", "para alugar"]):
         filtros["finalidade"] = "locacao"
         encontrou_filtro = True
-    elif "comprar" in mensagem_lower or "venda" in mensagem_lower:
+    elif any(palavra in mensagem_lower for palavra in ["comprar", "venda", "à venda", "para comprar"]):
         filtros["finalidade"] = "venda"
         encontrou_filtro = True
 
-    # Dividindo a mensagem para verificar números e contexto
-    palavras = mensagem_lower.split()
+    numeros = [int(num) for num in re.findall(r'\b\d+\b', mensagem_lower)]
+    # Expressão regular para encontrar números na mensagem
 
-    for i, palavra in enumerate(palavras):
-        if palavra.isdigit():
-            numero = int(palavra)
 
-            # Verifica contexto para definir preço ou quartos
-            if i > 0 and palavras[i - 1] in ["acima", "maior", "mais", "superior"]:
-                filtros["min_preco"] = numero  # Preço mínimo (exemplo: acima de 2000)
-                encontrou_filtro = True
-            elif i > 0 and palavras[i - 1] in ["abaixo", "menor", "inferior"]:
-                filtros["max_preco"] = numero  # Preço máximo (exemplo: abaixo de 2000)
-                encontrou_filtro = True
-            elif "quartos" in palavras or "dormitórios" in palavras or "dormitorio" in palavras:
-                filtros["min_quartos"] = numero  # Retorna imóveis com quartos maiores ou iguais
-                encontrou_filtro = True
+    if "entre" in mensagem_lower and "e" in mensagem_lower:
+        valores = re.findall(r'\b\d+\b', mensagem_lower)
+        if len(valores) >= 2:
+            filtros["min_preco"] = int(valores[0])
+            filtros["max_preco"] = int(valores[1])
+            encontrou_filtro = True
+            # Verifica se há um intervalo de preços (exemplo: "entre 200000 e 600000")
 
-    return filtros if encontrou_filtro else {}
-    # Se nenhum filtro foi identificado, retorna um dicionário vazio para evitar erro no `buscar_imoveis()`
+    for i, numero in enumerate(numeros):
+        if "quartos" in mensagem_lower or "dormitórios" in mensagem_lower:
+            filtros["min_quartos"] = numero
+            encontrou_filtro = True
+        elif any(palavra in mensagem_lower for palavra in ["acima", "maior", "mais", "superior", "apartir", "apartir de"]):
+            filtros["min_preco"] = numero
+            encontrou_filtro = True
+        elif any(palavra in mensagem_lower for palavra in ["abaixo", "menor", "inferior"]):
+            filtros["max_preco"] = numero
+            encontrou_filtro = True
+        elif "preço" in mensagem_lower or "valor" in mensagem_lower:
+            filtros["max_preco"] = numero
+            encontrou_filtro = True
+    # Se houver apenas um número, verificar contexto (preço ou quartos)
+
+
+    return filtros if encontrou_filtro else None
+    # Se não encontrou nenhum critério, retorna None (pergunta fora do contexto)
 
 @chatbot_bp.route("/api/chatbot", methods=["POST"])
 def chatbot():
@@ -75,21 +99,27 @@ def chatbot():
     filtros = extrair_filtros(mensagem)
 
     if filtros is None:
-        return jsonify({"resposta": "Este chatbot responde apenas sobre os imóveis cadastrados."})
-        # Busca imóveis filtrados
-    else:
-        imoveis_encontrados = buscar_imoveis(**filtros)  # Busca imóveis filtrados
+        return jsonify({"resposta": "Infelizmente não é possível responder esse tipo de dúvida, apenas as dúvidas relacionadas aos imóveis disponíveis."})
 
-    if imoveis_encontrados:
-        # Gera um contexto para a IA responder com base nos imóveis cadastrados
-        contexto = "Os seguintes imóveis atendem aos critérios da pesquisa:\n"
-        for imovel in imoveis_encontrados:
-            contexto += f"- {imovel['titulo']} ({imovel['finalidade']}), {imovel['quartos']} quartos, R${imovel['preco']}\n"
+    imoveis_encontrados = buscar_imoveis(**filtros)
+    # Busca imóveis filtrados no banco
 
-        prompt = f"{contexto}\nAgora, responda à seguinte pergunta do usuário: {mensagem}"
-        resposta_ia = enviar_para_groq(prompt)
+    if not imoveis_encontrados:
+        return jsonify({"resposta": "Desculpe, mas não há nenhum imóvel com essas especificações."})
 
-        return jsonify({"resposta": resposta_ia, "imoveis": imoveis_encontrados})
+    contexto = f"Aqui estão os {len(imoveis_encontrados)} imóveis que atendem aos critérios da pesquisa:\n"
+    for i, imovel in enumerate(imoveis_encontrados[:10], 1):
+        # Limita a 10 imóveis para não sobrecarregar a IA
 
-# Se não for uma busca por imóveis, ir[a limitar com a repsosta abaixo)
-    return jsonify({"resposta": "Desculpe, mas não há nenhum imóvel com essas especificações."})
+        contexto += f"{i}. {imovel['titulo']} ({imovel['finalidade']}), {imovel['quartos']} quartos, R${imovel['preco']}\n"
+        # Se houver imóveis compatíveis, cria um contexto para a IA
+    
+    if len(imoveis_encontrados) > 10:
+        contexto += f"... e mais {len(imoveis_encontrados) - 10} imóveis.\n"
+
+    prompt = f"{contexto}\nAgora, responda à seguinte pergunta do usuário de forma natural e informativa: {mensagem}"
+
+    resposta_ia = enviar_para_groq(prompt)
+    # Faz a chamada para a IA SOMENTE SE houver imóveis encontrados
+
+    return jsonify({"resposta": resposta_ia, "imoveis": imoveis_encontrados})
