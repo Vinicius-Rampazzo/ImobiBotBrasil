@@ -99,10 +99,9 @@ def chatbot():
     filtros = extrair_filtros(mensagem)
 
     if filtros is None:
-        return jsonify({"resposta": "Infelizmente não é possível responder esse tipo de dúvida, apenas as dúvidas relacionadas aos imóveis disponíveis."})
+        return jsonify({"resposta": "Infelizmente não é possível responder esse tipo de dúvida, apenas as dúvidas relacionadas aos imóveis disponíveis. Qual tipo de imóvel você busca?"})
 
     imoveis_encontrados = buscar_imoveis(**filtros)
-    # Busca imóveis filtrados no banco
 
     if not imoveis_encontrados:
         return jsonify({"resposta": "Desculpe, mas não há nenhum imóvel com essas especificações."})
