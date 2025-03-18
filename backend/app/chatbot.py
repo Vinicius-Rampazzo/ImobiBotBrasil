@@ -91,15 +91,78 @@ def extrair_filtros(mensagem):
     return filtros if encontrou_filtro else None
     # Se não encontrou nenhum critério, retorna None (pergunta fora do contexto)
 
+def verificar_pergunta_imoveis(mensagem):
+    """
+    Verifica se a mensagem é exclusivamente sobre imóveis ou se contém perguntas externas.
+    Retorna True se for sobre imóveis, False se contiver perguntas não relacionadas.
+    """
+    mensagem_lower = mensagem.lower()
+    
+    palavras_chave_imoveis = [
+        "imóvel", "imovel", "imoveis", "imóveis", "casa", "casas", "apartamento", "apartamentos", "terreno", "terrenos", "aluguel", "alugueis",
+        "alugar", "comprar", "venda", "vender", "preço", "valor", "quartos", "dormitórios",
+        "locação", "locacao", "metros", "metros quadrados", "m²", "condomínio", "financiamento",
+        "imobiliária", "imobiliárias", "imobiliaria", "imobiliarias", "corretor", "corretores", "liste", "listar" 
+    ]
+    
+    tem_palavras_imoveis = any(palavra in mensagem_lower for palavra in palavras_chave_imoveis)
+    
+    perguntas_proibidas = [
+        "porque", "quem", "como", "por que", "o que",  
+        "população", "história", "geografia", "químico", "físico", "biológico",
+        "matemático", "científico", "político", "econômico", "social", "cultural",
+        "histórico", "religioso", "técnico", "artístico", "literário", "esportivo"
+    ]
+    
+    count_perguntas = sum(1 for palavra in perguntas_proibidas if palavra in mensagem_lower)
+    # Conta quantas palavras de perguntas proibidas estão na mensagem
+    
+    if count_perguntas > 2 and not tem_palavras_imoveis:
+        return False
+    # Se tiver mais de 2 termos de perguntas proibidas, provavelmente é uma pergunta não relacionada
+    
+    if tem_palavras_imoveis and count_perguntas <= 2:
+        return True
+    # Se tiver palavras de imóveis e menos de 3 termos de perguntas proibidas, provavelmente é sobre imóveis
+    
+    if tem_palavras_imoveis and count_perguntas > 2:
+    # Se tiver palavras de imóveis e também muitos termos de perguntas proibidas, analisa o contexto para determinar se é uma pergunta sobre imóveis com palavras de exemplo ou se é uma tentativa de injeção de prompt
+        
+        frases = re.split(r'[.!?;]', mensagem_lower)
+        # Quebra a mensagem em frases
+        
+        frases_imoveis = 0
+        frases_gerais = 0
+        # Conta frases que são sobre imóveis e frases que são perguntas gerais
+        
+        for frase in frases:
+            if frase.strip():  # Ignora frases vazias
+                if any(palavra in frase for palavra in palavras_chave_imoveis):
+                    frases_imoveis += 1
+                else:
+                    frases_gerais += 1
+        
+        # Se houver mais frases gerais que de imóveis, provavelmente é uma injeção de prompt
+        return frases_imoveis >= frases_gerais
+    
+    # Por padrão, rejeita mensagens que não têm palavras-chave de imóveis
+    return False
+
 @chatbot_bp.route("/api/chatbot", methods=["POST"])
 def chatbot():
     dados = request.json
     mensagem = dados.get("mensagem", "")
 
+    if not verificar_pergunta_imoveis(mensagem):
+        return jsonify({
+            "resposta": "Posso ajudar apenas com perguntas relacionadas a imóveis. Por favor, me pergunte sobre casas, apartamentos, valores, locações ou vendas."
+        })
+        # Primeiro, verifica se a mensagem é realmente sobre imóveis
+
     filtros = extrair_filtros(mensagem)
 
     if filtros is None:
-        return jsonify({"resposta": "Infelizmente não é possível responder esse tipo de dúvida, apenas as dúvidas relacionadas aos imóveis disponíveis. Qual tipo de imóvel você busca?"})
+        return jsonify({"resposta": "Posso ajudar apenas com consultas sobre imóveis disponíveis. Que tipo de imóvel você está procurando?"})
 
     imoveis_encontrados = buscar_imoveis(**filtros)
 
@@ -116,7 +179,18 @@ def chatbot():
     if len(imoveis_encontrados) > 10:
         contexto += f"... e mais {len(imoveis_encontrados) - 10} imóveis.\n"
 
-    prompt = f"{contexto}\nAgora, responda à seguinte pergunta do usuário de forma natural e informativa: {mensagem}"
+    prompt = f"""
+    {contexto}
+    
+    Responda à seguinte pergunta do usuário de forma amigável, gentil, natural e informativa, APENAS sobre os imóveis listados acima.
+
+    Se a pergunta contiver temas não relacionados a imóveis, como geografia, história, política, etc., 
+    ignore gentilmente essas partes e responda apenas sobre os imóveis com um tom acolhedor e prestativo.
+
+    Use uma linguagem humanizada e educada, como se estivesse conversando com um cliente importante! Inclua saudações educadas e pergunte se pode ajudar em algo mais. Lembrando que você é o assistente virtual Louis, do ImobiBotBrasil, então sempre lembre-se de se apresentar.
+
+    Pergunta do usuário: {mensagem}
+    """
 
     resposta_ia = enviar_para_groq(prompt)
     # Faz a chamada para a IA SOMENTE SE houver imóveis encontrados
