@@ -34,17 +34,21 @@ def extrair_filtros(mensagem):
         "imóveis disponíveis", "imoveis disponiveis", 
         "imóveis de aluguel", "imoveis de aluguel",
         "imóveis para alugar", "imoveis para alugar",
+        "imóveis para temporada", "imoveis para temporada",
         "imóveis à venda", "imoveis a venda",
         "todos os imóveis", "todos os imoveis",
+        "quais imóveis tem disponível", "quais imoveis tem disponivel",
+        "preciso de um imóvel", "preciso de um imovel",
+        "preciso de imoveis", "preciso de imóveis"
     ]):
         # Retornar um filtro vazio (que vai buscar todos os imóveis)
 
         encontrou_filtro = True
 
-        if "aluguel" in mensagem_lower or "alugar" in mensagem_lower:
-            filtros["finalidade"] = "locacao"
-        elif "venda" in mensagem_lower or "comprar" in mensagem_lower:
-            filtros["finalidade"] = "venda"
+    if "aluguel" in mensagem_lower or "alugar" in mensagem_lower:
+        filtros["finalidade"] = "locacao"
+    elif "venda" in mensagem_lower or "comprar" in mensagem_lower:
+        filtros["finalidade"] = "venda"
 
     if "casa" in mensagem_lower:
         filtros["tipo"] = "casa"
@@ -53,7 +57,7 @@ def extrair_filtros(mensagem):
         filtros["tipo"] = "apartamento"
         encontrou_filtro = True
 
-    if any(palavra in mensagem_lower for palavra in ["alugar", "locação", "locacao", "para alugar"]):
+    if any(palavra in mensagem_lower for palavra in ["alugar", "locação", "locacao", "para alugar", "temporada", "para temporada"]):
         filtros["finalidade"] = "locacao"
         encontrou_filtro = True
     elif any(palavra in mensagem_lower for palavra in ["comprar", "venda", "à venda", "para comprar"]):
@@ -87,6 +91,7 @@ def extrair_filtros(mensagem):
             encontrou_filtro = True
     # Se houver apenas um número, verificar contexto (preço ou quartos)
 
+    
 
     return filtros if encontrou_filtro else None
     # Se não encontrou nenhum critério, retorna None (pergunta fora do contexto)
@@ -99,10 +104,11 @@ def verificar_pergunta_imoveis(mensagem):
     mensagem_lower = mensagem.lower()
     
     palavras_chave_imoveis = [
-        "imóvel", "imovel", "imoveis", "imóveis", "casa", "casas", "apartamento", "apartamentos", "terreno", "terrenos", "aluguel", "alugueis",
+        "imóvel", "mostre", "imovel", "imoveis", "imóveis", "casa", "casas", "apartamento", "apartamentos", "terreno", "terrenos", "aluguel", "alugueis",
         "alugar", "comprar", "venda", "vender", "preço", "valor", "quartos", "dormitórios",
         "locação", "locacao", "metros", "metros quadrados", "m²", "condomínio", "financiamento",
-        "imobiliária", "imobiliárias", "imobiliaria", "imobiliarias", "corretor", "corretores", "liste", "listar" 
+        "imobiliária", "imobiliárias", "imobiliaria", "imobiliarias", "corretor", "corretores",
+        "liste", "listar", "mostre", "mostrar", "quais", "tem", "temporada", "temporadas"
     ]
     
     tem_palavras_imoveis = any(palavra in mensagem_lower for palavra in palavras_chave_imoveis)
@@ -182,7 +188,8 @@ def chatbot():
     prompt = f"""
     {contexto}
     
-    Responda à seguinte pergunta do usuário de forma amigável, gentil, natural e informativa, APENAS sobre os imóveis listados acima.
+    Responda à seguinte pergunta do usuário de forma amigável, gentil, natural e informativa, APENAS sobre os imóveis listados acima,
+    e sempre em Português (Brasil).
 
     Se a pergunta contiver temas não relacionados a imóveis, como geografia, história, política, etc., 
     ignore gentilmente essas partes e responda apenas sobre os imóveis com um tom acolhedor e prestativo.
