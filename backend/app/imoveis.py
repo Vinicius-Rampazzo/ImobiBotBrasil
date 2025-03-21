@@ -71,6 +71,16 @@ def buscar_imoveis(tipo=None, finalidade=None, min_preco=None, max_preco=None, m
         query += " AND quartos >= ?"
         parametros.append(min_quartos)
 
+    print(f"min_quartos: {min_quartos}")
+    print(f"min_preco: {min_preco}")
+    print(f"max_preco: {max_preco}")
+
+    query_completa = query
+    for param in parametros:
+        query_completa = query_completa.replace('?', str(param), 1)
+    print(f"Consulta completa: {query_completa}")
+    # funcao temporaria para realizar alguns testes
+
     cursor.execute(query, parametros)
     imoveis = cursor.fetchall()
     conexao.close()

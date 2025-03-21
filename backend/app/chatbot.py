@@ -39,16 +39,18 @@ def extrair_filtros(mensagem):
         "todos os imóveis", "todos os imoveis",
         "quais imóveis tem disponível", "quais imoveis tem disponivel",
         "preciso de um imóvel", "preciso de um imovel",
-        "preciso de imoveis", "preciso de imóveis"
+        "preciso de imoveis", "preciso de imóveis",
+        "me diga", "me fale", "digam-me", "fale-me"
     ]):
         # Retornar um filtro vazio (que vai buscar todos os imóveis)
-
         encontrou_filtro = True
 
     if "aluguel" in mensagem_lower or "alugar" in mensagem_lower:
         filtros["finalidade"] = "locacao"
+        encontrou_filtro = True
     elif "venda" in mensagem_lower or "comprar" in mensagem_lower:
         filtros["finalidade"] = "venda"
+        encontrou_filtro = True
 
     if "casa" in mensagem_lower:
         filtros["tipo"] = "casa"
@@ -57,41 +59,46 @@ def extrair_filtros(mensagem):
         filtros["tipo"] = "apartamento"
         encontrou_filtro = True
 
-    if any(palavra in mensagem_lower for palavra in ["alugar", "locação", "locacao", "para alugar", "temporada", "para temporada"]):
+    if any(palavra in mensagem_lower for palavra in ["alugar", "aluguel", "alugueis", "locação", "locacao", "para alugar", "temporada", "para temporada"]):
         filtros["finalidade"] = "locacao"
         encontrou_filtro = True
     elif any(palavra in mensagem_lower for palavra in ["comprar", "venda", "à venda", "para comprar"]):
         filtros["finalidade"] = "venda"
         encontrou_filtro = True
 
-    numeros = [int(num) for num in re.findall(r'\b\d+\b', mensagem_lower)]
-    # Expressão regular para encontrar números na mensagem
-
-
-    if "entre" in mensagem_lower and "e" in mensagem_lower:
-        valores = re.findall(r'\b\d+\b', mensagem_lower)
-        if len(valores) >= 2:
-            filtros["min_preco"] = int(valores[0])
-            filtros["max_preco"] = int(valores[1])
+    if "quartos" in mensagem_lower or "dormitórios" in mensagem_lower:
+        # Verifica "mais de X quartos"
+        mais_de_quartos = re.findall(r'mais\s+de\s+(\d+)\s*(?:quartos|dormitórios)', mensagem_lower)
+        if mais_de_quartos:
+            # Se encontrou "mais de X quartos", define min_quartos como X+1
+            filtros["min_quartos"] = int(mais_de_quartos[0]) + 1
             encontrou_filtro = True
-            # Verifica se há um intervalo de preços (exemplo: "entre 200000 e 600000")
-
-    for i, numero in enumerate(numeros):
-        if "quartos" in mensagem_lower or "dormitórios" in mensagem_lower:
-            filtros["min_quartos"] = numero
-            encontrou_filtro = True
-        elif any(palavra in mensagem_lower for palavra in ["acima", "maior", "mais", "superior", "apartir", "apartir de"]):
-            filtros["min_preco"] = numero
-            encontrou_filtro = True
-        elif any(palavra in mensagem_lower for palavra in ["abaixo", "menor", "inferior"]):
-            filtros["max_preco"] = numero
-            encontrou_filtro = True
-        elif "preço" in mensagem_lower or "valor" in mensagem_lower:
-            filtros["max_preco"] = numero
-            encontrou_filtro = True
-    # Se houver apenas um número, verificar contexto (preço ou quartos)
-
+        else:
+            # Procura por padrão normal "X quartos"
+            numeros_antes_quartos = re.findall(r'(\d+)\s*(?:quartos|dormitórios)', mensagem_lower)
+            if numeros_antes_quartos:
+                filtros["min_quartos"] = int(numeros_antes_quartos[0])
+                encontrou_filtro = True
     
+    # Extração de faixas de preço
+    if "entre" in mensagem_lower and "até" in mensagem_lower or "entre" in mensagem_lower and "e" in mensagem_lower:
+        match = re.search(r'entre\s*(\d+)\s*(?:e|até)\s*(\d+)', mensagem_lower)
+        if match:
+            filtros["min_preco"] = int(match.group(1))
+            filtros["max_preco"] = int(match.group(2))
+            encontrou_filtro = True
+    else:
+        # Verificar preço máximo e mínimo individualmente
+        max_match = re.search(r'(?:até|máximo|no máximo|menos de)\s*(\d+)', mensagem_lower)
+        min_match = re.search(r'(?:apartir de|a partir de|mínimo|no mínimo|mais de)\s*(\d+)', mensagem_lower)
+        
+        if max_match and not "quartos" in max_match.group(0) and not "dormitórios" in max_match.group(0):
+            filtros["max_preco"] = int(max_match.group(1))
+            encontrou_filtro = True
+        
+        if min_match and not "quartos" in min_match.group(0) and not "dormitórios" in min_match.group(0):
+            filtros["min_preco"] = int(min_match.group(1))
+            encontrou_filtro = True
 
     return filtros if encontrou_filtro else None
     # Se não encontrou nenhum critério, retorna None (pergunta fora do contexto)
@@ -104,11 +111,7 @@ def verificar_pergunta_imoveis(mensagem):
     mensagem_lower = mensagem.lower()
     
     palavras_chave_imoveis = [
-        "imóvel", "mostre", "imovel", "imoveis", "imóveis", "casa", "casas", "apartamento", "apartamentos", "terreno", "terrenos", "aluguel", "alugueis",
-        "alugar", "comprar", "venda", "vender", "preço", "valor", "quartos", "dormitórios",
-        "locação", "locacao", "metros", "metros quadrados", "m²", "condomínio", "financiamento",
-        "imobiliária", "imobiliárias", "imobiliaria", "imobiliarias", "corretor", "corretores",
-        "liste", "listar", "mostre", "mostrar", "quais", "tem", "temporada", "temporadas"
+        "imóvel", "mostre", "imovel", "imoveis", "imóveis", "casa", "casas", "apartamento", "apartamentos", "terreno", "terrenos", "aluguel", "alugueis", "alugar", "comprar", "venda", "vender", "preço", "valor", "quartos", "dormitórios", "locação", "locacao", "metros", "metros quadrados", "m²", "condomínio", "financiamento", "imobiliária", "imobiliárias", "imobiliaria", "imobiliarias", "corretor", "corretores", "liste", "listar", "mostre", "mostrar", "quais", "tem", "temporada", "temporadas", "diga", "quarto"
     ]
     
     tem_palavras_imoveis = any(palavra in mensagem_lower for palavra in palavras_chave_imoveis)
@@ -167,6 +170,8 @@ def chatbot():
 
     filtros = extrair_filtros(mensagem)
 
+    print(f"Filtros extraídos: {filtros}")
+
     if filtros is None:
         return jsonify({"resposta": "Posso ajudar apenas com consultas sobre imóveis disponíveis. Que tipo de imóvel você está procurando?"})
 
@@ -191,8 +196,10 @@ def chatbot():
     Responda à seguinte pergunta do usuário de forma amigável, gentil, natural e informativa, APENAS sobre os imóveis listados acima,
     e sempre em Português (Brasil).
 
+    Quando falar palavaras como "quarto" no singular, quero que entenda que o usuário está dizendo "quartos" da forma correta, assim você seguir com essa mesma lógica com todas as outras propriedades, para facilitar a lógica.
+
     Se a pergunta contiver temas não relacionados a imóveis, como geografia, história, política, etc., 
-    ignore gentilmente essas partes e responda apenas sobre os imóveis com um tom acolhedor e prestativo.
+    Sempre ignore gentilmente essas partes e responda apenas sobre os imóveis com um tom acolhedor e prestativo.
 
     Use uma linguagem humanizada e educada, como se estivesse conversando com um cliente importante! Inclua saudações educadas e pergunte se pode ajudar em algo mais. Lembrando que você é o assistente virtual Louis, do ImobiBotBrasil, então sempre lembre-se de se apresentar.
 
