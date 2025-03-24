@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ImobiBotBrasil - Assistente Virtual Louis</title>
+    <link rel="stylesheet" href="styles/main.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+  </head>
+  <body>
+    <header>
+      <div class="logo-container">
+        <img
+          src="assets/logo.png"
+          alt="ImobiBotBrasil Logo"
+          class="logo"
+          onerror="this.src='https://via.placeholder.com/150x50?text=ImobiBotBrasil'"
+        />
+        <h1>ImobiBotBrasil</h1>
+      </div>
+      <p class="tagline">Encontre seu imóvel ideal com a ajuda do Louis</p>
+    </header>
+
+    <main class="two-column-layout">
+      <!-- Coluna do chat - Lado esquerdo -->
+      <section id="chat-column">
+        <div id="chat-container">
+          <div id="chat-messages">
+            <div class="message bot">
+              <div class="avatar">
+                <i class="fas fa-robot"></i>
+              </div>
+              <div class="message-content">
+                <span class="bot-name">Louis</span>
+                <p>
+                  Olá! Sou o Louis, seu assistente virtual do ImobiBotBrasil!
+                  Estou aqui para ajudá-lo com todas as informações sobre
+                  imóveis que eu possa oferecer. Como posso te ajudar hoje?
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div id="chat-input-area">
+            <div id="typing-indicator" class="hidden">
+              <div class="dot"></div>
+              <div class="dot"></div>
+              <div class="dot"></div>
+            </div>
+            <form id="chat-form">
+              <input
+                type="text"
+                id="message-input"
+                placeholder="Pergunte ao Louis sobre imóveis..."
+                autocomplete="off"
+              />
+              <button type="submit" id="send-button">
+                <i class="fas fa-paper-plane"></i>
+              </button>
+            </form>
+            <div id="suggestion-chips">
+              <button class="suggestion-chip">Imóveis para alugar</button>
+              <button class="suggestion-chip">Casas à venda</button>
+              <button class="suggestion-chip">
+                Apartamentos com 2 quartos
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Coluna dos imóveis - Lado direito -->
+      <section id="properties-column">
+        <div class="properties-title">
+          <span id="properties-title-text">Converse com Louis</span>
+        </div>
+
+        <div id="properties-container">
+          <!-- Placeholder do Louis -->
+          <div id="louis-placeholder" class="louis-placeholder active">
+            <div class="louis-avatar">
+              <img
+                src="./assets/images/louis-character.png"
+                alt="Louis - Assistente Virtual"
+                onerror="this.onerror=null; this.src='https://via.placeholder.com/200x200?text=Louis';"
+              />
+            </div>
+            <div class="louis-message">
+              <p>Estou aqui para te ajudar a encontrar o seu imóvel!</p>
+            </div>
+          </div>
+
+          <!-- Os imóveis serão inseridos aqui via JavaScript -->
+          <div id="properties-grid-container" class="hidden">
+            <!-- Grid de imóveis será inserido aqui -->
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <p>&copy; 2025 ImobiBotBrasil. Todos os direitos reservados.</p>
+    </footer>
+
+    <script src="scripts/main.js"></script>
+  </body>
+</html>
