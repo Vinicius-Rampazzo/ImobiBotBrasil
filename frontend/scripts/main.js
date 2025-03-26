@@ -82,9 +82,19 @@ document.addEventListener("DOMContentLoaded", () => {
     // Avatar
     const avatarDiv = document.createElement("div");
     avatarDiv.className = "avatar";
-    const avatarIcon = document.createElement("i");
-    avatarIcon.className = isUser ? "fas fa-user" : "fas fa-robot";
-    avatarDiv.appendChild(avatarIcon);
+
+    if (isUser) {
+      // Para o usuário, mantém o ícone
+      const avatarIcon = document.createElement("i");
+      avatarIcon.className = "fas fa-user";
+      avatarDiv.appendChild(avatarIcon);
+    } else {
+      // Para o Louis, usa a imagem personalizada
+      const avatarImg = document.createElement("img");
+      avatarImg.src = "./assets/images/louis-chatbot.png";
+      avatarImg.alt = "Louis - Chatbot";
+      avatarDiv.appendChild(avatarImg);
+    }
 
     // Conteúdo da mensagem
     const contentDiv = document.createElement("div");
