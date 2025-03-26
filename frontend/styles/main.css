@@ -133,6 +133,17 @@ main {
   flex-shrink: 0;
 }
 
+.avatar img {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  /* background-color: var(--gray-200); */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
 .message.user .avatar {
   background-color: var(--secondary-color);
   color: white;
@@ -496,8 +507,8 @@ footer {
 }
 
 .louis-avatar {
-  width: 180px;
-  height: 180px;
+  width: 650px;
+  height: 650px;
   margin-bottom: 20px;
   position: relative;
   transition: transform 0.3s ease;
@@ -520,10 +531,6 @@ footer {
   100% {
     transform: translateY(0px);
   }
-}
-
-#louis-placeholder.active .louis-avatar {
-  animation: float 3s ease-in-out infinite;
 }
 
 .louis-message {
