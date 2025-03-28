@@ -507,11 +507,7 @@ footer {
 }
 
 .louis-avatar {
-  width: 650px;
-  height: 650px;
-  margin-bottom: 20px;
-  position: relative;
-  transition: transform 0.3s ease;
+  margin-top: -5px;
 }
 
 .louis-avatar img {
@@ -533,17 +529,54 @@ footer {
   }
 }
 
+/* Modifique estas propriedades no seu CSS */
 .louis-message {
-  background-color: var(--bot-message-bg);
+  position: relative;
+  background-color: #f0f7ff;
   padding: 15px 20px;
   border-radius: 18px;
-  max-width: 80%;
-  margin-top: 15px;
+  margin-bottom: 15px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  position: relative;
-  transition: transform 0.3s ease, opacity 0.3s ease;
-  opacity: 0;
-  transform: translateY(20px);
+  max-width: 80%; /* Manter o mesmo que antes */
+  width: auto; /* Importante: permite que o balão se ajuste ao conteúdo */
+  text-align: center;
+  z-index: 2;
+  display: block; /* Em vez de 'none' para manter visível */
+  align-self: center; /* Centraliza o balão */
+}
+
+.message-visible {
+  display: block !important;
+  animation: fadeIn 0.5s ease forwards !important;
+}
+
+/* Ajuste a seta do balão para apontar para o Louis */
+.louis-message::after {
+  content: "";
+  position: absolute;
+  bottom: -10px; /* Posiciona a seta na parte inferior do balão */
+  left: 50%; /* Centraliza horizontalmente */
+  transform: translateX(-50%);
+  border-left: 10px solid transparent;
+  border-right: 10px solid transparent;
+  border-top: 10px solid #f0f7ff; /* A seta aponta para baixo, em direção ao personagem */
+  border-bottom: none;
+}
+
+/* Ajuste o tamanho do vídeo para não ser muito grande */
+.louis-avatar video {
+  width: 600; /* Ou o tamanho que preferir */
+  height: auto;
+  max-height: 800;
+  object-fit: contain;
+}
+
+/* Reorganize os elementos no placeholder */
+#louis-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 
 #louis-placeholder.active .louis-message {
@@ -552,21 +585,36 @@ footer {
   transition-delay: 0.2s; /* Pequeno delay para sequenciar a animação */
 }
 
-.louis-message::before {
-  content: "";
-  position: absolute;
-  top: -10px;
-  left: 50%;
-  transform: translateX(-50%);
-  border-left: 10px solid transparent;
-  border-right: 10px solid transparent;
-  border-bottom: 10px solid var(--bot-message-bg);
-}
-
 .louis-message p {
+  /* margin: 0;
+  font-size: 1.1rem;
+  color: var(--dark-color); */
   margin: 0;
+  padding: 0;
   font-size: 1.1rem;
   color: var(--dark-color);
+  line-height: 1.4; /* Ajuste a altura da linha */
+  white-space: normal; /* Permite quebra de linha normal */
+}
+
+/* .typing-cursor {
+  display: inline-block;
+  width: 2px;
+  height: 1.1em;
+  background-color: #333;
+  margin-left: 2px;
+  vertical-align: middle;
+  animation: blink 1s infinite;
+} */
+
+@keyframes blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
 }
 
 #properties-container {
@@ -612,4 +660,15 @@ footer {
 
 .title-changing {
   animation: titleChange 0.5s ease;
+}
+
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }

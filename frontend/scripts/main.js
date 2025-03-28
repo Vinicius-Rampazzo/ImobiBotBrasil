@@ -9,6 +9,7 @@ document.addEventListener("DOMContentLoaded", () => {
     "properties-grid-container"
   );
   const propertiesTitleText = document.getElementById("properties-title-text");
+  const louisMessage = document.querySelector(".louis-message");
 
   // URLs da API
   const CHATBOT_API_URL = "http://127.0.0.1:8080/api/chatbot";
@@ -20,6 +21,53 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Mostrar o placeholder do Louis ao carregar a página
   showLouisPlaceholder();
+
+  // Função para efeito de digitação
+  function typeText(element, text, speed = 20, callback) {
+    let index = 0;
+
+    // Limpa o conteúdo atual
+    element.innerHTML = "";
+
+    // Adiciona um cursor
+    const cursor = document.createElement("span");
+    cursor.className = "typing-cursor";
+    element.appendChild(cursor);
+
+    // Função para adicionar um caractere por vez
+    function typeCharacter() {
+      if (index < text.length) {
+        // Insere o texto antes do cursor
+        const textNode = document.createTextNode(text.charAt(index));
+        element.insertBefore(textNode, cursor);
+        index++;
+        setTimeout(typeCharacter, speed);
+      } else {
+        // Remove o cursor quando terminar
+        setTimeout(() => {
+          cursor.remove();
+          if (callback) callback();
+        }, 1000);
+      }
+    }
+
+    // Inicia a digitação
+    setTimeout(typeCharacter, 100);
+  }
+
+  if (louisMessage) {
+    // Primeiro, mostra o balão vazio (sem o texto)
+    const messageText = louisMessage.querySelector("p").textContent;
+    louisMessage.querySelector("p").textContent = "";
+
+    // Faz o balão aparecer
+    // louisMessage.style.display = "block";
+
+    // Inicia o efeito de digitação após o balão aparecer
+    setTimeout(() => {
+      typeText(louisMessage.querySelector("p"), messageText, 35);
+    }, 100); // Espera 1 segundo após o balão aparecer
+  }
 
   // ===== FUNÇÕES PRINCIPAIS =====
 
