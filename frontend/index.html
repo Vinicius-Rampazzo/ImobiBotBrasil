@@ -80,13 +80,27 @@
           <!-- Placeholder do Louis -->
           <div id="louis-placeholder" class="louis-placeholder active">
             <div class="louis-message">
-              <p>Estou aqui para te ajudar a encontrar o seu imóvel!</p>
+              <p>
+                Olá, pessoal! Meu nome é Louis e estou aqui para te ajudar a
+                encontrar o seu imóvel!
+              </p>
             </div>
+            <script>
+              setTimeout(function () {
+                document.querySelector(".louis-message").style.visibility =
+                  "visible";
+              }, 2000);
+            </script>
             <div class="louis-avatar">
-              <img
-                src="./assets/images/louis-character.png"
+              <video
+                src="./assets/videos/louis-acenando.mp4"
                 alt="Louis - Assistente Virtual"
-              />
+                autoplay
+                muted
+                playsinline
+                width="600"
+                height="auto"
+              ></video>
             </div>
           </div>
 
