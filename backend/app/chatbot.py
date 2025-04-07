@@ -30,8 +30,19 @@ def extrair_filtros(mensagem):
     encontrou_filtro = False
     mensagem_lower = mensagem.lower()
 
+    # Detecção específica para imóveis apenas disponíveis
     if any(frase in mensagem_lower for frase in [
-        "imóveis disponíveis", "imoveis disponiveis", 
+        "apenas os imóveis disponíveis", "somente disponíveis", 
+        "apenas disponíveis", "só os disponíveis", 
+        "apenas os disponíveis", "apenas imóveis disponíveis",
+        "disponíveis"
+    ]):
+        filtros["status"] = "disponivel"
+        encontrou_filtro = True
+        print("Filtro de status 'disponivel' aplicado")
+
+    # Detecção de solicitações genéricas
+    if any(frase in mensagem_lower for frase in [
         "imóveis de aluguel", "imoveis de aluguel",
         "imóveis para alugar", "imoveis para alugar",
         "imóveis para temporada", "imoveis para temporada",
@@ -42,7 +53,7 @@ def extrair_filtros(mensagem):
         "preciso de imoveis", "preciso de imóveis",
         "me diga", "me fale", "digam-me", "fale-me"
     ]):
-        # Retornar um filtro vazio (que vai buscar todos os imóveis)
+        # Marcamos que encontramos um filtro, mesmo que genérico
         encontrou_filtro = True
 
     if "aluguel" in mensagem_lower or "alugar" in mensagem_lower:
@@ -191,12 +202,20 @@ def chatbot():
     print(f"É listagem de todos? {eh_listar_todos}")
 
     # Se é uma solicitação para listar todos ou não foram encontrados filtros específicos
-    if filtros is None or eh_listar_todos:
+    if filtros is None:
         print("Usando filtros vazios para buscar todos os imóveis")
         filtros = {}  # Dicionário vazio para buscar todos os imóveis
+    
+    # Se o usuário pediu especificamente por imóveis disponíveis
+    if "apenas" in mensagem.lower() and any(palavra in mensagem.lower() for palavra in ["disponíveis", "disponiveis"]):
+        filtros["status"] = "disponivel"
+        print("Aplicando filtro: apenas imóveis disponíveis")
 
     # Buscar imóveis com os filtros (mesmo que sejam vazios)
-    imoveis_encontrados = buscar_imoveis(**filtros)
+    resultado_imoveis = buscar_imoveis(**filtros)
+    imoveis_encontrados = resultado_imoveis[0]  # Extrair a lista de imóveis
+    info_paginacao = resultado_imoveis[1]  # Extrair as informações de paginação
+    
     print(f"Quantidade de imóveis encontrados: {len(imoveis_encontrados)}")
 
     if not imoveis_encontrados:
@@ -315,4 +334,4 @@ def chatbot():
 
     resposta_ia = enviar_para_groq(prompt)
 
-    return jsonify({"resposta": resposta_ia, "imoveis": imoveis_encontrados})
+    return jsonify({"resposta": resposta_ia, "imoveis": imoveis_encontrados, "paginacao": info_paginacao})

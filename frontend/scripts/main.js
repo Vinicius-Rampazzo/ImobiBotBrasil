@@ -11,8 +11,16 @@ document.addEventListener("DOMContentLoaded", () => {
   const propertiesTitleText = document.getElementById("properties-title-text");
   const louisMessage = document.querySelector(".louis-message");
 
+  // Estado para controle de paginação
+  let paginationState = {
+    currentPage: 1,
+    totalPages: 1,
+    itemsPerPage: 10,
+    totalItems: 0,
+  };
+
   // URLs da API
-  const CHATBOT_API_URL = "http://127.0.0.1:8080/api/chatbot";
+  const CHATBOT_API_URL = "/api/chatbot";
 
   // Controle de estado da conversa usando sessionStorage
   const hasInteractedBefore =
@@ -60,13 +68,10 @@ document.addEventListener("DOMContentLoaded", () => {
     const messageText = louisMessage.querySelector("p").textContent;
     louisMessage.querySelector("p").textContent = "";
 
-    // Faz o balão aparecer
-    // louisMessage.style.display = "block";
-
     // Inicia o efeito de digitação após o balão aparecer
     setTimeout(() => {
       typeText(louisMessage.querySelector("p"), messageText, 35);
-    }, 100); // Espera 1 segundo após o balão aparecer
+    }, 100);
   }
 
   // ===== FUNÇÕES PRINCIPAIS =====
@@ -85,7 +90,7 @@ document.addEventListener("DOMContentLoaded", () => {
         },
         body: JSON.stringify({
           mensagem: message,
-          isFirstInteraction: isFirstInteraction, // Enviamos o estado para o backend
+          isFirstInteraction: isFirstInteraction,
         }),
       });
 
@@ -110,7 +115,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
       // Exibir os imóveis, se houver
       if (data.imoveis && data.imoveis.length > 0) {
-        displayProperties(data.imoveis);
+        // Verificar se há informações de paginação
+        displayProperties(data.imoveis, data.paginacao, true);
       }
     } catch (error) {
       console.error("Erro ao enviar mensagem:", error);
@@ -171,7 +177,14 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // Função para exibir os imóveis
-  function displayProperties(properties) {
+  function displayProperties(
+    properties,
+    paginationInfo = null,
+    updateChat = true
+  ) {
+    console.log("Exibindo propriedades:", properties.length);
+    console.log("Informações de paginação:", paginationInfo);
+
     if (!properties || properties.length === 0) {
       // Se não houver imóveis, mostra o placeholder do Louis
       if (propertiesTitleText.textContent !== "Converse com Louis") {
@@ -181,6 +194,17 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
+    // Atualizar o estado da paginação se as informações forem fornecidas
+    if (paginationInfo) {
+      paginationState = {
+        currentPage: paginationInfo.pagina_atual,
+        totalPages: paginationInfo.total_paginas,
+        itemsPerPage: paginationInfo.itens_por_pagina,
+        totalItems: paginationInfo.total_imoveis,
+      };
+      console.log("Estado de paginação atualizado:", paginationState);
+    }
+
     // Se houver imóveis, esconde o placeholder e mostra os imóveis
     if (propertiesTitleText.textContent !== "Imóveis Encontrados") {
       animateTitleChange("Imóveis Encontrados");
@@ -188,6 +212,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Limpar o container de imóveis
     propertiesGridContainer.innerHTML = "";
+
+    // Adicionar contador de resultados
+    const totalCount = document.createElement("div");
+    totalCount.className = "properties-count";
+    totalCount.textContent = `${paginationState.totalItems} imóveis encontrados (Página ${paginationState.currentPage} de ${paginationState.totalPages})`;
+    propertiesGridContainer.appendChild(totalCount);
 
     // Criar grid de propriedades
     const propertiesGrid = document.createElement("div");
@@ -200,8 +230,190 @@ document.addEventListener("DOMContentLoaded", () => {
 
     propertiesGridContainer.appendChild(propertiesGrid);
 
-    // Esconder o placeholder do Louis e mostrar os imóveis
-    hideLouisPlaceholder();
+    // Adicionar controles de paginação se houver mais de uma página
+    if (paginationState.totalPages > 1) {
+      const paginationControls = createPaginationControls();
+      propertiesGridContainer.appendChild(paginationControls);
+    }
+
+    // Esconder o placeholder do Louis e mostrar os imóveis apenas se for uma nova consulta
+    if (updateChat) {
+      hideLouisPlaceholder();
+    } else if (louisPlaceholder.classList.contains("active")) {
+      // Se o placeholder do Louis estiver ativo, escondemos mesmo na navegação
+      hideLouisPlaceholder();
+    }
+
+    // Garantir que o grid de imóveis esteja visível
+    propertiesGridContainer.classList.remove("hidden");
+    propertiesGridContainer.classList.add("active");
+  }
+
+  // Função para criar controles de paginação
+  function createPaginationControls() {
+    console.log("Criando controles de paginação");
+
+    const paginationContainer = document.createElement("div");
+    paginationContainer.className = "pagination-container";
+
+    // Informações sobre a paginação
+    const paginationInfo = document.createElement("div");
+    paginationInfo.className = "pagination-info";
+    paginationInfo.textContent = `Página ${paginationState.currentPage} de ${paginationState.totalPages}`;
+    paginationContainer.appendChild(paginationInfo);
+
+    // Botões de paginação
+    const paginationButtons = document.createElement("div");
+    paginationButtons.className = "pagination-buttons";
+
+    // Botão Primeira Página
+    const firstButton = document.createElement("button");
+    firstButton.className = "pagination-button";
+    firstButton.innerHTML = '<i class="fas fa-angle-double-left"></i>';
+    firstButton.title = "Primeira página";
+    firstButton.disabled = paginationState.currentPage <= 1;
+    firstButton.addEventListener("click", () => {
+      if (paginationState.currentPage > 1) {
+        fetchProperties(1);
+      }
+    });
+    paginationButtons.appendChild(firstButton);
+
+    // Botão Anterior
+    const prevButton = document.createElement("button");
+    prevButton.className = "pagination-button";
+    prevButton.innerHTML = '<i class="fas fa-angle-left"></i>';
+    prevButton.title = "Página anterior";
+    prevButton.disabled = paginationState.currentPage <= 1;
+    prevButton.addEventListener("click", () => {
+      if (paginationState.currentPage > 1) {
+        fetchProperties(paginationState.currentPage - 1);
+      }
+    });
+    paginationButtons.appendChild(prevButton);
+
+    // Números de páginas
+    const createPageButton = (pageNum) => {
+      const pageButton = document.createElement("button");
+      pageButton.className = "pagination-button page-number";
+      if (pageNum === paginationState.currentPage) {
+        pageButton.classList.add("active");
+      }
+      pageButton.textContent = pageNum;
+      pageButton.addEventListener("click", () => {
+        if (pageNum !== paginationState.currentPage) {
+          fetchProperties(pageNum);
+        }
+      });
+      return pageButton;
+    };
+
+    // Lógica para mostrar os números de página
+    const maxPageButtons = 3; // Máximo de botões numéricos a mostrar
+    let startPage = Math.max(
+      1,
+      paginationState.currentPage - Math.floor(maxPageButtons / 2)
+    );
+    let endPage = Math.min(
+      paginationState.totalPages,
+      startPage + maxPageButtons - 1
+    );
+
+    // Ajusta o início se não tiver suficientes páginas no final
+    if (endPage - startPage + 1 < maxPageButtons) {
+      startPage = Math.max(1, endPage - maxPageButtons + 1);
+    }
+
+    // Adiciona botões de página
+    for (let i = startPage; i <= endPage; i++) {
+      paginationButtons.appendChild(createPageButton(i));
+    }
+
+    // Botão Próximo
+    const nextButton = document.createElement("button");
+    nextButton.className = "pagination-button";
+    nextButton.innerHTML = '<i class="fas fa-angle-right"></i>';
+    nextButton.title = "Próxima página";
+    nextButton.disabled =
+      paginationState.currentPage >= paginationState.totalPages;
+    nextButton.addEventListener("click", () => {
+      if (paginationState.currentPage < paginationState.totalPages) {
+        fetchProperties(paginationState.currentPage + 1);
+      }
+    });
+    paginationButtons.appendChild(nextButton);
+
+    // Botão Última Página
+    const lastButton = document.createElement("button");
+    lastButton.className = "pagination-button";
+    lastButton.innerHTML = '<i class="fas fa-angle-double-right"></i>';
+    lastButton.title = "Última página";
+    lastButton.disabled =
+      paginationState.currentPage >= paginationState.totalPages;
+    lastButton.addEventListener("click", () => {
+      if (paginationState.currentPage < paginationState.totalPages) {
+        fetchProperties(paginationState.totalPages);
+      }
+    });
+    paginationButtons.appendChild(lastButton);
+
+    paginationContainer.appendChild(paginationButtons);
+
+    return paginationContainer;
+  }
+
+  // Função para buscar imóveis em uma página específica
+  function fetchProperties(page = 1) {
+    console.log("Buscando imóveis - página", page);
+
+    // Mostra indicador de carregamento somente na seção de imóveis
+    const loadingIndicator = document.createElement("div");
+    loadingIndicator.className = "loading-indicator";
+    loadingIndicator.innerHTML =
+      '<i class="fas fa-spinner fa-spin"></i> Carregando imóveis...';
+
+    // Limpa somente o container de imóveis
+    propertiesGridContainer.innerHTML = "";
+    propertiesGridContainer.appendChild(loadingIndicator);
+
+    // Constrói a URL para a API
+    const url = `/api/imoveis?pagina=${page}&itens_por_pagina=${paginationState.itemsPerPage}`;
+    console.log("URL de busca:", url);
+
+    fetch(url)
+      .then((response) => {
+        console.log("Status da resposta:", response.status);
+        if (!response.ok) {
+          throw new Error("Erro ao buscar imóveis: " + response.statusText);
+        }
+        return response.json();
+      })
+      .then((data) => {
+        console.log("Dados recebidos:", data);
+
+        // Exibe os imóveis com a paginação
+        if (data.imoveis && data.paginacao) {
+          // false como terceiro parâmetro para não afetar o chat
+          displayProperties(data.imoveis, data.paginacao, false);
+        } else {
+          console.error("Formato de dados inválido:", data);
+          propertiesGridContainer.innerHTML = `
+            <div class="error-message">
+              <i class="fas fa-exclamation-triangle"></i>
+              <p>Formato de dados inválido recebido do servidor.</p>
+            </div>
+          `;
+        }
+      })
+      .catch((error) => {
+        console.error("Erro ao buscar propriedades:", error);
+        propertiesGridContainer.innerHTML = `
+          <div class="error-message">
+            <i class="fas fa-exclamation-triangle"></i>
+            <p>Ocorreu um erro ao buscar os imóveis: ${error.message}</p>
+          </div>
+        `;
+      });
   }
 
   // Função para criar o card de um imóvel
@@ -222,7 +434,7 @@ document.addEventListener("DOMContentLoaded", () => {
       <div class="property-image">
         ${
           property.imagem
-            ? `<img src="${property.imagem}" alt="${property.titulo}">`
+            ? `<img src="${property.imagem}" alt="${property.titulo}" onerror="this.onerror=null; this.src='./assets/images/placeholder-property.jpg';">`
             : '<i class="fas fa-home"></i>'
         }
       </div>
@@ -372,4 +584,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Focar no input ao carregar a página
   messageInput.focus();
+
+  // Adicionamos logs para depuração
+  console.log("Script inicializado com sucesso");
 });
