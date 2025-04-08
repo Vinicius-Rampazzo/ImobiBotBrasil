@@ -19,8 +19,22 @@ document.addEventListener("DOMContentLoaded", () => {
     totalItems: 0,
   };
 
+  // NOVA SOLUÇÃO: Armazenar os filtros aplicados pelo chatbot
+  let activeFilters = {
+    tipo: null,
+    finalidade: null,
+    min_preco: null,
+    max_preco: null,
+    min_quartos: null,
+    status: null // Importante: deve ser null inicialmente, não "disponivel"
+  };
+
+  // Indicador de consulta inicial vs. paginação
+  let isFirstQuery = true;
+
   // URLs da API
   const CHATBOT_API_URL = "/api/chatbot";
+  const IMOVEIS_BUSCAR_API_URL = "/api/imoveis/buscar";
 
   // Controle de estado da conversa usando sessionStorage
   const hasInteractedBefore =
@@ -115,8 +129,50 @@ document.addEventListener("DOMContentLoaded", () => {
 
       // Exibir os imóveis, se houver
       if (data.imoveis && data.imoveis.length > 0) {
+        // Estamos em uma nova consulta
+        isFirstQuery = true;
+        
         // Verificar se há informações de paginação
         displayProperties(data.imoveis, data.paginacao, true);
+        
+        // IMPORTANTE: Resetar e extrair os novos filtros
+        resetFilters(); // Limpa filtros anteriores
+        
+        // Se o servidor incluir os filtros usados, ótimo!
+        if (data.filtros) {
+          console.log("Filtros recebidos do servidor:", data.filtros);
+          // Atualiza os filtros ativos
+          Object.keys(data.filtros).forEach(key => {
+            if (activeFilters.hasOwnProperty(key)) {
+              activeFilters[key] = data.filtros[key];
+            }
+          });
+        } else {
+          // Tentar extrair filtros do texto da consulta (abordagem simplificada)
+          const lowerMessage = message.toLowerCase();
+          
+          // Detecção de tipo de imóvel
+          if (lowerMessage.includes("apartamento")) {
+            activeFilters.tipo = "apartamento";
+          } else if (lowerMessage.includes("casa")) {
+            activeFilters.tipo = "casa";
+          }
+          
+          // Detecção de finalidade
+          if (lowerMessage.includes("aluguel") || lowerMessage.includes("alugar")) {
+            activeFilters.finalidade = "locacao";
+          } else if (lowerMessage.includes("comprar") || lowerMessage.includes("venda")) {
+            activeFilters.finalidade = "venda";
+          }
+          
+          // IMPORTANTE: NÃO defina o status como "disponivel" automaticamente
+          // Observe o status atual dos imóveis retornados para determinar o filtro
+          if (detectFilterFromResults(data.imoveis)) {
+            console.log("Filtro de status detectado a partir dos resultados");
+          }
+        }
+        
+        console.log("Filtros ativos após processamento:", activeFilters);
       }
     } catch (error) {
       console.error("Erro ao enviar mensagem:", error);
@@ -126,6 +182,31 @@ document.addEventListener("DOMContentLoaded", () => {
         false
       );
     }
+  }
+  
+  // Nova função para detectar filtros a partir dos resultados retornados
+  function detectFilterFromResults(imoveis) {
+    if (!imoveis || imoveis.length === 0) return false;
+    
+    // Verifica se todos os imóveis têm o mesmo status
+    const allSameStatus = imoveis.every(imovel => imovel.status === imoveis[0].status);
+    
+    if (allSameStatus) {
+      // Se todos têm o mesmo status, definimos esse como o filtro
+      activeFilters.status = imoveis[0].status;
+      return true;
+    } else {
+      // Se há mistura de status, significa que não há filtro de status
+      activeFilters.status = null;
+      return false;
+    }
+  }
+
+  // Função para resetar filtros
+  function resetFilters() {
+    Object.keys(activeFilters).forEach(key => {
+      activeFilters[key] = null;
+    });
   }
 
   // Função para adicionar mensagem ao chat
@@ -362,34 +443,69 @@ document.addEventListener("DOMContentLoaded", () => {
     return paginationContainer;
   }
 
-  // Função para buscar imóveis em uma página específica
+  // Função para buscar imóveis em uma página específica - FUNÇÃO CORREÇÃO FINAL
   function fetchProperties(page = 1) {
-    console.log("Buscando imóveis - página", page);
+    console.log("DEPURAÇÃO: Requisitando página", page);
+    
+    // Não é mais a primeira consulta quando estamos navegando
+    isFirstQuery = false;
 
     // Mostra indicador de carregamento somente na seção de imóveis
     const loadingIndicator = document.createElement("div");
     loadingIndicator.className = "loading-indicator";
     loadingIndicator.innerHTML =
-      '<i class="fas fa-spinner fa-spin"></i> Carregando imóveis...';
+      '<i class="fas fa-spinner fa-spin"></i> Carregando imóveis (página ' + page + ')...';
 
     // Limpa somente o container de imóveis
     propertiesGridContainer.innerHTML = "";
     propertiesGridContainer.appendChild(loadingIndicator);
 
-    // Constrói a URL para a API
-    const url = `/api/imoveis?pagina=${page}&itens_por_pagina=${paginationState.itemsPerPage}`;
-    console.log("URL de busca:", url);
+    // Esta é a chave da correção: usar a API de busca com os filtros corretos
+    // Criar objeto de parâmetros para a URL
+    const params = new URLSearchParams();
+    params.append('pagina', page);
+    params.append('itens_por_pagina', paginationState.itemsPerPage);
+    
+    // CORREÇÃO: preservar exatamente os mesmos filtros entre páginas
+    // Adicionar os filtros ativos à query
+    Object.keys(activeFilters).forEach(key => {
+      if (activeFilters[key] !== null) {
+        params.append(key, activeFilters[key]);
+      }
+    });
+    
+    // Usar a API de busca que suporta múltiplos filtros
+    const filteredUrl = `${IMOVEIS_BUSCAR_API_URL}?${params.toString()}`;
+    
+    console.log("DEPURAÇÃO - URL de busca com filtros:", filteredUrl);
+    console.log("DEPURAÇÃO - Parâmetros:", Object.fromEntries(params.entries()));
 
-    fetch(url)
+    fetch(filteredUrl)
       .then((response) => {
-        console.log("Status da resposta:", response.status);
+        console.log("DEPURAÇÃO - Status da resposta:", response.status);
         if (!response.ok) {
           throw new Error("Erro ao buscar imóveis: " + response.statusText);
         }
         return response.json();
       })
       .then((data) => {
-        console.log("Dados recebidos:", data);
+        console.log("DEPURAÇÃO - Dados recebidos:", data);
+        console.log("DEPURAÇÃO - Página atual recebida:", data.paginacao ? data.paginacao.pagina_atual : "N/A");
+        console.log("DEPURAÇÃO - Quantidade de imóveis recebidos:", data.imoveis ? data.imoveis.length : 0);
+        
+        // Se for navegação de página, vamos verificar se os resultados parecem consistentes
+        if (!isFirstQuery && data.imoveis) {
+          // Verificar se há consistência entre os resultados da navegação
+          const allSameStatus = data.imoveis.every(
+            imovel => activeFilters.status === null || imovel.status === activeFilters.status
+          );
+          
+          console.log("DEPURAÇÃO - Todos imóveis têm status consistente?", allSameStatus);
+          
+          if (!allSameStatus) {
+            console.warn("ATENÇÃO: Os imóveis recebidos não têm o mesmo status do filtro ativo!");
+          }
+        }
 
         // Exibe os imóveis com a paginação
         if (data.imoveis && data.paginacao) {
@@ -407,6 +523,8 @@ document.addEventListener("DOMContentLoaded", () => {
       })
       .catch((error) => {
         console.error("Erro ao buscar propriedades:", error);
+        
+        // Mostrar mensagem de erro para o usuário
         propertiesGridContainer.innerHTML = `
           <div class="error-message">
             <i class="fas fa-exclamation-triangle"></i>
@@ -586,5 +704,5 @@ document.addEventListener("DOMContentLoaded", () => {
   messageInput.focus();
 
   // Adicionamos logs para depuração
-  console.log("Script inicializado com sucesso");
+  console.log("Script inicializado com sucesso - VERSÃO CORRIGIDA FINAL");
 });
