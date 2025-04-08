@@ -4,8 +4,8 @@ import random
 def conectar_banco():
     return sqlite3.connect('imobibot.db')
 
-def adicionar_50_imoveis_teste():
-    """Adiciona 50 imóveis de teste ao banco de dados."""
+def adicionar_1000_imoveis_teste():
+    """Adiciona 1000 imóveis de teste ao banco de dados."""
     conexao = conectar_banco()
     cursor = conexao.cursor()
     
@@ -33,15 +33,24 @@ def adicionar_50_imoveis_teste():
     finalidades = ['venda', 'locacao']
     status_opcoes = ['disponivel', 'vendido', 'alugado']
     
-    bairros = ['Centro', 'Jardim América', 'Vila Nova', 'Santa Luzia', 'Bairro Nobre']
-    ruas = ['Avenida Principal', 'Rua das Flores', 'Alameda dos Ipês', 'Rua do Comércio', 'Avenida Central']
+    bairros = [
+        'Centro', 'Jardim América', 'Vila Nova', 'Santa Luzia', 'Bairro Nobre',
+        'Parque das Flores', 'Zona Sul', 'Vila Mariana', 'Nova Europa', 'Jardim Primavera',
+        'Alto da Colina', 'Vila Esperança', 'Recanto Verde', 'Jardim das Oliveiras', 'Monte Alegre'
+    ]
+
+    ruas = [
+        'Avenida Principal', 'Rua das Flores', 'Alameda dos Ipês', 'Rua do Comércio', 'Avenida Central',
+        'Rua dos Pinheiros', 'Avenida Brasil', 'Rua da Paz', 'Alameda Santos', 'Rua XV de Novembro',
+        'Avenida Paulista', 'Rua das Palmeiras', 'Alameda Rio Branco', 'Rua Direita', 'Avenida Rebouças'
+    ]
     
-    # Limpa os imóveis existentes para garantir que teremos exatamente 50
+    # Limpa os imóveis existentes para garantir que teremos exatamente 1000
     cursor.execute("DELETE FROM imoveis")
     conexao.commit()
     
     # Adiciona 50 imóveis
-    for i in range(1, 51):
+    for i in range(1, 1001):
         tipo = random.choice(tipos)
         finalidade = random.choice(finalidades)
         status = random.choice(status_opcoes)
@@ -67,7 +76,7 @@ def adicionar_50_imoveis_teste():
             quartos = 0
             banheiros = 0
         else:
-            quartos = random.randint(1, 5)
+            quartos = random.randint(1, 8)
             banheiros = min(quartos, random.randint(1, 4))
         
         # Metragem
@@ -108,7 +117,10 @@ def adicionar_50_imoveis_teste():
             (codigo_referencia, titulo, descricao, preco, endereco, tipo, finalidade, imagem, quartos, banheiros, metragem, status) 
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (codigo_referencia, titulo, descricao, preco, endereco, tipo, finalidade, imagem, quartos, banheiros, metragem, status))
-            print(f"Imóvel {i}: {titulo} adicionado com sucesso.")
+
+            if i % 100 == 0:
+                print(f"Progresso: {i} imóveis adicionados.")
+
         except sqlite3.IntegrityError as e:
             print(f"Erro ao adicionar imóvel {i}: {e}")
     
@@ -119,10 +131,6 @@ def adicionar_50_imoveis_teste():
     print("Para ver 10 imóveis por página, ajuste o parâmetro 'itens_por_pagina' para 10 nas requisições.")
 
 if __name__ == "__main__":
-    adicionar_50_imoveis_teste()
-
-  # inserir_imovel("REF002", "Apartamento Vista ao Mar", "Luxuoso com vista", 720000, "Rua do Sol, 78", "apartamento", "venda", 2, 2, 95)
-  # inserir_imovel("REF003", "Casa de Campo", "Casa espaçosa na serra", 380000, "Estrada da Montanha, 12", "casa", "venda", 5, 4, 350)
-  # inserir_imovel("REF004", "Casa de Festas", "Muito espaço para familia e amigos", 2500, "Rua bastista de morais, 25", "casa", "locacao", 8, 4, 420)
+    adicionar_1000_imoveis_teste()
 
 # Verificacao para saber se o arquivo database.py será executado diretamente, caso isso aconteca, chama a funcao para criar o banco.
