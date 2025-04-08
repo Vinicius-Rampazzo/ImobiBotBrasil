@@ -27,14 +27,18 @@ O sistema utiliza as seguintes bibliotecas Python:
 - requests 2.32.3
 - E outras dependências listadas no arquivo `requirements.txt`
 
-## Instalação Rápida
+## Instalação De Dependências
 
 ### Windows
 
 1. Clone este repositório
 2. No terminal, Execute o arquivo `setup.bat` (digite --> ./setup.bat)
-3. Aguarde a instalação das dependências e criação do banco de dados
-4. Após a conclusão, execute o servidor com o comando indicado ao final da instalação
+3. Digite no terminal `pip install flask flask-cors`.
+4. Digite também `pip install openai`
+5. Em seguida, digite `pip install python-dotenv`
+3. Após toda a instalação, reinicie o seu dispositivo para garantir o funcionamento completo.
+4. Aguarde a instalação das dependências e criação do banco de dados
+5. Após a conclusão, execute o servidor com o comando indicado ao final da instalação
 
 ### Linux/Mac
 
@@ -49,14 +53,24 @@ O sistema utiliza as seguintes bibliotecas Python:
 
 ## Executando o Sistema
 
+Primeiro você deve criar todos os imóveis no banco de dados, executando o comando:
+
+```bash
+# No Windows (a partir da pasta raiz do projeto)
+python backend\app\database.py
+
+# No Linux/Mac (a partir da pasta raiz do projeto)
+python backend/app/database.py
+```
+
 Após a instalação, você pode iniciar o servidor com:
 
 ```bash
 # No Windows (a partir da pasta raiz do projeto)
-python backend\main.py
+python backend\app\main.py
 
 # No Linux/Mac (a partir da pasta raiz do projeto)
-python backend/main.py
+python backend/app/main.py
 ```
 
 Acesse o sistema em seu navegador através do endereço:
