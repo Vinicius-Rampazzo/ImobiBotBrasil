@@ -7,6 +7,11 @@ Sistema de chatbot para imobiliárias com assistente virtual Louis.
 - Python 3.8 ou superior
 - Navegador web moderno (Chrome, Firefox, Edge, etc.)
 
+## AVISO!
+
+- Antes de qualquer coisa, instale o python em sua máquina na versão 3.8 ou superior.
+- Visite o site para instalar: https://www.python.org/downloads/
+
 ## Dependências
 
 O sistema utiliza as seguintes bibliotecas Python:
@@ -22,7 +27,7 @@ O sistema utiliza as seguintes bibliotecas Python:
 ### Windows
 
 1. Clone este repositório
-2. No terminal, Execute o arquivo `setup.bat` (digite setup.bat)
+2. No terminal, Execute o arquivo `setup.bat` (digite --> ./setup.bat)
 3. Aguarde a instalação das dependências e criação do banco de dados
 4. Após a conclusão, execute o servidor com o comando indicado ao final da instalação
 
