@@ -11,6 +11,11 @@ Sistema de chatbot para imobiliárias com assistente virtual Louis.
 
 - Antes de qualquer coisa, instale o python em sua máquina na versão 3.8 ou superior.
 - Visite o site para instalar: https://www.python.org/downloads/
+- Antes de inciar a instalação do Python, selecione a opção "Add Python to PATH".
+- Ao concluir as configurações iniciais, crie uma conta na GROQ AI: https://groq.com/
+- Ao criar uma chave da API na GROQ AI, cria na raiz do projeto um arquivo `.env`.
+- Copie sua chave da API e navegue até o arquivo `.env`.
+- Logo em seguida coloque na primeira linha da seguinte forma `GROQ_API_KEY=Cole_Sua_Chave_Aqui`.
 
 ## Dependências
 
