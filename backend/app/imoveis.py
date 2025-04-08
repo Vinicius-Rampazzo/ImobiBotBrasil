@@ -109,7 +109,8 @@ def buscar_imoveis_route():
         "min_preco": request.args.get("min_preco", type=float),
         "finalidade": request.args.get("finalidade"),
         "min_quartos": request.args.get("min_quartos", type=int),
-        "status": request.args.get("status"),  # Adicionei filtro por status
+        "min_banheiros": request.args.get("min_banheiros", type=int),  # Adicionado filtro por banheiros
+        "status": request.args.get("status"),
         "pagina": pagina,
         "itens_por_pagina": itens_por_pagina
     }
@@ -123,7 +124,7 @@ def buscar_imoveis_route():
         "paginacao": info_paginacao
     })
 
-def buscar_imoveis(tipo=None, finalidade=None, min_preco=None, max_preco=None, min_quartos=None, status=None, pagina=1, itens_por_pagina=10):
+def buscar_imoveis(tipo=None, finalidade=None, min_preco=None, max_preco=None, min_quartos=None, min_banheiros=None, status=None, pagina=1, itens_por_pagina=10):
     """Busca imóveis com filtros e paginação."""
     conexao = conectar_banco()
     cursor = conexao.cursor()
@@ -158,6 +159,12 @@ def buscar_imoveis(tipo=None, finalidade=None, min_preco=None, max_preco=None, m
         query += " AND quartos >= ?"
         query_count += " AND quartos >= ?"
         parametros.append(min_quartos)
+    
+    # Adicionando filtro de banheiros
+    if min_banheiros is not None:
+        query += " AND banheiros >= ?"
+        query_count += " AND banheiros >= ?"
+        parametros.append(min_banheiros)
         
     # Filtra por status apenas se especificado
     if status is not None:
@@ -169,7 +176,7 @@ def buscar_imoveis(tipo=None, finalidade=None, min_preco=None, max_preco=None, m
     query += " ORDER BY id DESC"
 
     # Logging para debug
-    print(f"Filtros aplicados: tipo={tipo}, finalidade={finalidade}, min_preco={min_preco}, max_preco={max_preco}, min_quartos={min_quartos}, status={status}")
+    print(f"Filtros aplicados: tipo={tipo}, finalidade={finalidade}, min_preco={min_preco}, max_preco={max_preco}, min_quartos={min_quartos}, min_banheiros={min_banheiros}, status={status}")
     print(f"Paginação: pagina={pagina}, itens_por_pagina={itens_por_pagina}")
 
     # Executa a query para contar o total de resultados
