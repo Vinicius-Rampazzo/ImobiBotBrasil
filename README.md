@@ -11,6 +11,11 @@ Sistema de chatbot para imobiliárias com assistente virtual Louis.
 
 - Antes de qualquer coisa, instale o python em sua máquina na versão 3.8 ou superior.
 - Visite o site para instalar: https://www.python.org/downloads/
+- Antes de inciar a instalação do Python, selecione a opção "Add Python to PATH".
+- Ao concluir as configurações iniciais, crie uma conta na GROQ AI: https://groq.com/
+- Ao criar uma chave da API na GROQ AI, cria na raiz do projeto um arquivo `.env`.
+- Copie sua chave da API e navegue até o arquivo `.env`.
+- Logo em seguida coloque na primeira linha da seguinte forma `GROQ_API_KEY=Cole_Sua_Chave_Aqui`.
 
 ## Dependências
 
@@ -22,14 +27,18 @@ O sistema utiliza as seguintes bibliotecas Python:
 - requests 2.32.3
 - E outras dependências listadas no arquivo `requirements.txt`
 
-## Instalação Rápida
+## Instalação De Dependências
 
 ### Windows
 
 1. Clone este repositório
 2. No terminal, Execute o arquivo `setup.bat` (digite --> ./setup.bat)
-3. Aguarde a instalação das dependências e criação do banco de dados
-4. Após a conclusão, execute o servidor com o comando indicado ao final da instalação
+3. Digite no terminal `pip install flask flask-cors`.
+4. Digite também `pip install openai`
+5. Em seguida, digite `pip install python-dotenv`
+3. Após toda a instalação, reinicie o seu dispositivo para garantir o funcionamento completo.
+4. Aguarde a instalação das dependências e criação do banco de dados
+5. Após a conclusão, execute o servidor com o comando indicado ao final da instalação
 
 ### Linux/Mac
 
@@ -44,14 +53,24 @@ O sistema utiliza as seguintes bibliotecas Python:
 
 ## Executando o Sistema
 
+Primeiro você deve criar todos os imóveis no banco de dados, executando o comando:
+
+```bash
+# No Windows (a partir da pasta raiz do projeto)
+python backend\app\database.py
+
+# No Linux/Mac (a partir da pasta raiz do projeto)
+python backend/app/database.py
+```
+
 Após a instalação, você pode iniciar o servidor com:
 
 ```bash
 # No Windows (a partir da pasta raiz do projeto)
-python backend\main.py
+python backend\app\main.py
 
 # No Linux/Mac (a partir da pasta raiz do projeto)
-python backend/main.py
+python backend/app/main.py
 ```
 
 Acesse o sistema em seu navegador através do endereço:

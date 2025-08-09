@@ -69,47 +69,89 @@ def extrair_filtros(mensagem):
     elif "apartamento" in mensagem_lower:
         filtros["tipo"] = "apartamento"
         encontrou_filtro = True
+    elif "terreno" in mensagem_lower:
+        filtros["tipo"] = "terreno"
+        encontrou_filtro = True
 
     if any(palavra in mensagem_lower for palavra in ["alugar", "aluguel", "alugueis", "locação", "locacao", "para alugar", "temporada", "para temporada"]):
         filtros["finalidade"] = "locacao"
         encontrou_filtro = True
+        print("Filtro de finalidade 'locacao' aplicado")
     elif any(palavra in mensagem_lower for palavra in ["comprar", "venda", "à venda", "para comprar"]):
         filtros["finalidade"] = "venda"
         encontrou_filtro = True
+        print("Filtro de finalidade 'venda' aplicado")
 
-    if "quartos" in mensagem_lower or "dormitórios" in mensagem_lower:
+    # Detecção de quartos e banheiros
+    if "quartos" in mensagem_lower or "dormitórios" in mensagem_lower or "quarto" in mensagem_lower:
         # Verifica "mais de X quartos"
-        mais_de_quartos = re.findall(r'mais\s+de\s+(\d+)\s*(?:quartos|dormitórios)', mensagem_lower)
+        mais_de_quartos = re.findall(r'mais\s+de\s+(\d+)\s*(?:quartos?|dormitórios?)', mensagem_lower)
         if mais_de_quartos:
             # Se encontrou "mais de X quartos", define min_quartos como X+1
             filtros["min_quartos"] = int(mais_de_quartos[0]) + 1
             encontrou_filtro = True
+            print(f"Filtro de min_quartos '{filtros['min_quartos']}' aplicado (mais de)")
         else:
             # Procura por padrão normal "X quartos"
-            numeros_antes_quartos = re.findall(r'(\d+)\s*(?:quartos|dormitórios)', mensagem_lower)
+            numeros_antes_quartos = re.findall(r'(\d+)\s*(?:quartos?|dormitórios?)', mensagem_lower)
             if numeros_antes_quartos:
                 filtros["min_quartos"] = int(numeros_antes_quartos[0])
                 encontrou_filtro = True
+                print(f"Filtro de min_quartos '{filtros['min_quartos']}' aplicado")
     
-    # Extração de faixas de preço
-    if "entre" in mensagem_lower and "até" in mensagem_lower or "entre" in mensagem_lower and "e" in mensagem_lower:
-        match = re.search(r'entre\s*(\d+)\s*(?:e|até)\s*(\d+)', mensagem_lower)
-        if match:
-            filtros["min_preco"] = int(match.group(1))
-            filtros["max_preco"] = int(match.group(2))
+    # Detecção de banheiros - implementação melhorada
+    if "banheiros" in mensagem_lower or "banheiro" in mensagem_lower:
+        # Procura por padrões como "X banheiros" ou "imóveis de X banheiros"
+        padrao_banheiros = re.findall(r'(\d+)\s*(?:banheiros?|de\s+banheiros?)', mensagem_lower)
+        if padrao_banheiros:
+            filtros["min_banheiros"] = int(padrao_banheiros[0])
             encontrou_filtro = True
+            print(f"Filtro de min_banheiros '{filtros['min_banheiros']}' aplicado")
+        
+        # Verifica "mais de X banheiros"
+        mais_de_banheiros = re.findall(r'mais\s+de\s+(\d+)\s*(?:banheiros?)', mensagem_lower)
+        if mais_de_banheiros:
+            filtros["min_banheiros"] = int(mais_de_banheiros[0]) + 1
+            encontrou_filtro = True
+            print(f"Filtro de min_banheiros '{filtros['min_banheiros']}' aplicado (mais de)")
+    
+    # Extração de faixas de preço - MELHORADO
+    # Padrão "entre X e Y"
+    if re.search(r'(?:entre|de)\s*(?:R\$)?\s*(\d[\d.,]*)\s*(?:a|e|até|e até|ao?)\s*(?:R\$)?\s*(\d[\d.,]*)', mensagem_lower):
+        match = re.search(r'(?:entre|de)\s*(?:R\$)?\s*(\d[\d.,]*)\s*(?:a|e|até|e até|ao?)\s*(?:R\$)?\s*(\d[\d.,]*)', mensagem_lower)
+        if match:
+            # Limpar e converter valores (remover pontos e vírgulas)
+            min_valor = match.group(1).replace('.', '').replace(',', '')
+            max_valor = match.group(2).replace('.', '').replace(',', '')
+            filtros["min_preco"] = int(min_valor)
+            filtros["max_preco"] = int(max_valor)
+            encontrou_filtro = True
+            print(f"Encontrada faixa de preço: {filtros['min_preco']} até {filtros['max_preco']}")
+    # Padrão "valor de X até Y"
+    elif re.search(r'valor\s+de\s+(?:R\$)?\s*(\d[\d.,]*)\s*(?:a|até|ao?)\s*(?:R\$)?\s*(\d[\d.,]*)', mensagem_lower):
+        valor_ate_match = re.search(r'valor\s+de\s+(?:R\$)?\s*(\d[\d.,]*)\s*(?:a|até|ao?)\s*(?:R\$)?\s*(\d[\d.,]*)', mensagem_lower)
+        min_valor = valor_ate_match.group(1).replace('.', '').replace(',', '')
+        max_valor = valor_ate_match.group(2).replace('.', '').replace(',', '')
+        filtros["min_preco"] = int(min_valor)
+        filtros["max_preco"] = int(max_valor)
+        encontrou_filtro = True
+        print(f"Encontrada faixa de preço (valor de): {filtros['min_preco']} até {filtros['max_preco']}")
     else:
         # Verificar preço máximo e mínimo individualmente
-        max_match = re.search(r'(?:até|máximo|no máximo|menos de)\s*(\d+)', mensagem_lower)
-        min_match = re.search(r'(?:apartir de|a partir de|mínimo|no mínimo|mais de)\s*(\d+)', mensagem_lower)
+        max_match = re.search(r'(?:até|máximo|no máximo|menos de)\s*(?:R\$)?\s*(\d[\d.,]*)', mensagem_lower)
+        min_match = re.search(r'(?:apartir de|a partir de|mínimo|no mínimo|mais de|acima de)\s*(?:R\$)?\s*(\d[\d.,]*)', mensagem_lower)
         
         if max_match and not "quartos" in max_match.group(0) and not "dormitórios" in max_match.group(0):
-            filtros["max_preco"] = int(max_match.group(1))
+            max_valor = max_match.group(1).replace('.', '').replace(',', '')
+            filtros["max_preco"] = int(max_valor)
             encontrou_filtro = True
+            print(f"Encontrado preço máximo: {filtros['max_preco']}")
         
         if min_match and not "quartos" in min_match.group(0) and not "dormitórios" in min_match.group(0):
-            filtros["min_preco"] = int(min_match.group(1))
+            min_valor = min_match.group(1).replace('.', '').replace(',', '')
+            filtros["min_preco"] = int(min_valor)
             encontrou_filtro = True
+            print(f"Encontrado preço mínimo: {filtros['min_preco']}")
 
     return filtros if encontrou_filtro else None
     # Se não encontrou nenhum critério, retorna None (pergunta fora do contexto)
@@ -173,12 +215,16 @@ def chatbot():
     dados = request.json
     mensagem = dados.get("mensagem", "")
     
+    # Verificar se há parâmetros de paginação
+    paginacao = dados.get("paginacao", None)
+    
     # Verifica se é a primeira interação (recebido do frontend)
     is_first_interaction = dados.get("isFirstInteraction", True)
     
     # Log para debug
     print(f"É primeira interação? {is_first_interaction}")
     print(f"Mensagem recebida: {mensagem}")
+    print(f"Informações de paginação: {paginacao}")
 
     if not verificar_pergunta_imoveis(mensagem):
         print("A mensagem não é sobre imóveis")
@@ -210,6 +256,12 @@ def chatbot():
     if "apenas" in mensagem.lower() and any(palavra in mensagem.lower() for palavra in ["disponíveis", "disponiveis"]):
         filtros["status"] = "disponivel"
         print("Aplicando filtro: apenas imóveis disponíveis")
+    
+    # Se há informações de paginação, adicione-as aos filtros
+    if paginacao:
+        filtros["pagina"] = paginacao.get("pagina", 1)
+        filtros["itens_por_pagina"] = paginacao.get("itens_por_pagina", 10)
+        print(f"Aplicando paginação: página {filtros['pagina']}, itens: {filtros['itens_por_pagina']}")
 
     # Buscar imóveis com os filtros (mesmo que sejam vazios)
     resultado_imoveis = buscar_imoveis(**filtros)
@@ -224,7 +276,7 @@ def chatbot():
     
     # Verificar quantos filtros estão sendo aplicados (para determinar se é uma busca genérica)
     # Se tivermos menos de 2 filtros ou for uma solicitação explícita para listar todos, consideramos uma busca genérica
-    eh_busca_generica = (len([k for k, v in filtros.items() if v is not None]) < 2) or eh_listar_todos
+    eh_busca_generica = (len([k for k, v in filtros.items() if v is not None and k not in ['pagina', 'itens_por_pagina']]) < 2) or eh_listar_todos
     muitos_imoveis = len(imoveis_encontrados) > 3
     
     # Extrair tipos de imóveis disponíveis (para sugestões)
@@ -334,4 +386,10 @@ def chatbot():
 
     resposta_ia = enviar_para_groq(prompt)
 
-    return jsonify({"resposta": resposta_ia, "imoveis": imoveis_encontrados, "paginacao": info_paginacao})
+    # Incluir os filtros aplicados na resposta para o frontend
+    return jsonify({
+        "resposta": resposta_ia, 
+        "imoveis": imoveis_encontrados, 
+        "paginacao": info_paginacao,
+        "filtros": filtros  # Adicionar os filtros para uso no frontend
+    })
